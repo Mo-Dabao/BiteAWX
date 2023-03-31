@@ -259,7 +259,7 @@ Head2 = {
     1: Head2info(1, 64, '8s28h', Head2GSS, (0,), range(13, 23)),
     2: Head2info(2, 88, '8s40h', Head2POS, (0,), range(29, 35)),
     3: Head2info(3, 80, '8s36h', Head2Grd, (0,), range(16, 20)),
-    4: Head2info(4, 40, '8s16h', Head2Pts, (0,), ())
+    4: Head2info(4, 40, '8s16H', Head2Pts, (0,), ())
 }
 
 

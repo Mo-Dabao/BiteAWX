@@ -9,7 +9,7 @@ import numpy as np
 import xarray as xr
 from PIL import Image
 
-from .containers import Head1, Head3, Head2, Head_loc
+from .containers import Head1, Head3, Head2, Head_loc, Head2Pts
 from .tools import make_coords_dims_attrs, unpack_head, open_seek_read
 
 
@@ -77,12 +77,10 @@ class AWX(object):
         head1 = self.head1
         if head1.compress:
             NotImplementedError('Can\'t process compressed data for now')
-        if head1.category == 4:
-            NotImplementedError('Can\'t process Points data (head1.category=4) for now')
         if self._values is None:
             head2 = self.head2
-            dtype = f'u{head2.word_bytes}'
-            shape = (head2.height, head2.width)
+            dtype = '<>'[head1.byte_order] + f'u{head2.word_bytes}'
+            shape = (head2.height, head2.width) if head1.category != 4 else (-1, 20)
             buffer = open_seek_read(self.path, head1.record_length * head1.head_records, None)
             self._values = np.frombuffer(buffer, dtype=dtype).reshape(shape)
         return self._values
@@ -121,29 +119,41 @@ class AWX(object):
     def calibration(self, cali: np.ndarray):
         self._calibration = cali
 
-    def DataArray(self, calibrate=False):
+    def Dataset(self, calibrate=False):
         head2 = self.head2
-        coords, dims, attrs = make_coords_dims_attrs(head2)
+        data = self.values
+        coords, dims, attrs = make_coords_dims_attrs(head2, data)
         add_offset = attrs.get('add_offset', None)
         scale_factor = attrs.get('scale_factor', None)
-        data = self.values
         if calibrate and (self._calibration is not None):
             data = self._calibration[data]
         elif calibrate and scale_factor:
             data = data * scale_factor + add_offset
             del attrs['add_offset'], attrs['scale_factor']
-        da = xr.DataArray(
-            data, coords=coords, dims=dims, name=self.product_name, attrs=attrs
-        )
-        return da
+        if isinstance(head2, Head2Pts):
+            coordinates = {'coordinates': 'time lat lon p'}
+            ds = xr.Dataset(
+                data_vars=dict(
+                    dir=(dims, data[:, 3], {'units': 'degree', **coordinates}),
+                    spd=(dims, data[:, 4], {'units': 'm/s', **coordinates}),
+                    tmp=(dims, data[:, 6] / 100, {'units': 'K', **coordinates}),
+                ),
+                coords=coords,
+                attrs=attrs
+            )
+        else:
+            ds = xr.DataArray(
+                data, coords=coords, dims=dims, name=self.product_name, attrs=attrs
+            ).to_dataset()
+        return ds
 
     def to_netcdf(self, path_nc=None, calibrate=False, complevel=0):
         path_nc = path_nc or self.path + '.nc'
-        da = self.DataArray(calibrate)
+        ds = self.Dataset(calibrate)
         if complevel:
-            da.encoding['zlib'] = 'True'
-            da.encoding['complevel'] = complevel
-        ds = da.to_dataset()
+            for da in ds.data_vars.values:
+                da.encoding['zlib'] = 'True'
+                da.encoding['complevel'] = complevel
         if (not calibrate) and (self._calibration is not None):
             ds = ds.assign_coords(calibration=self._calibration)
         if (positioning := self._positioning) is not None:

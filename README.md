@@ -16,7 +16,7 @@ pip install BiteAWX
 
 - 查看各级头信息
 - 读取原始数据块为numpy数组
-- 读取为定标/未定标xarray数组
+- 读取为定标/未定标xarray~~数组~~数据集
 - 修改定标表
 - 另存为netCDF4文件，可选是否定标、压缩
 - 另存为图片
@@ -32,11 +32,11 @@ awx = AWX(path_awx)
 # 读取原始数据为np.ndarray
 array = awx.values
 
-# 读取原始数据为xarray.DataArray
-da = awx.DataArray()
+# 读取原始数据为xarray.Dataset
+ds = awx.Dataset()
 
-# 读取定标后为xarray.DataArray
-da = awx.DataArray(calibrate=True)
+# 读取定标后为xarray.Dataset
+ds = awx.Dataset(calibrate=True)
 
 # 查看定标表
 calibration = awx.calibration
@@ -46,8 +46,8 @@ import numpy as np
 calibration = np.arange(len(calibration)) * calibration[1]
 awx.calibration = calibration
 
-# 读取新定标后为xarray.DataArray
-da = awx.DataArray(calibrate=True)
+# 读取新定标后为xarray.Dataset
+ds = awx.Dataset(calibrate=True)
 
 # 查看各级头信息
 print(awx.head1, '\n')
@@ -71,7 +71,7 @@ awx.to_pic(path='where/what.jpg')  # 指定路径和文件名
 - 已测试数据有限，可能存在Bug，欢迎提issue
 - 不要过于信任MICAPS4的显示范围，它的投影参数可能有问题
 - 投影信息存储遵循CF-Conventions，所以暂时没有强制提供经纬度网格
-- 暂不支持离散场产品数据的提取，但应当可以读取各级头信息
+- ~~暂不支持离散场产品数据的提取，但应当可以读取各级头信息~~
 - 要素名称从三级头信息的sat2004文件名提取，否则默认为`Unknown`
 
 ## TODO
@@ -79,5 +79,5 @@ awx.to_pic(path='where/what.jpg')  # 指定路径和文件名
 - 详细文档
 - 增加强制提供经纬度网格的选项
 - 增加作为xarray的backend
-- 支持离散场产品数据
+- ~~支持离散场产品数据~~
 - 支持手动定义要素名
