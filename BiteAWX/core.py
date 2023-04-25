@@ -79,7 +79,7 @@ class AWX(object):
             NotImplementedError('Can\'t process compressed data for now')
         if self._values is None:
             head2 = self.head2
-            dtype = '<>'[head1.byte_order] + f'u{head2.word_bytes}'
+            dtype = '<>'[head1.byte_order] + 'iu'[head1.category != 4] + f'{head2.word_bytes}'
             shape = (head2.height, head2.width) if head1.category != 4 else (-1, 20)
             buffer = open_seek_read(self.path, head1.record_length * head1.head_records, None)
             self._values = np.frombuffer(buffer, dtype=dtype).reshape(shape)
